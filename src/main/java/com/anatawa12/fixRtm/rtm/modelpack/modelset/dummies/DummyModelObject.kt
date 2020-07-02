@@ -1,19 +1,26 @@
 package com.anatawa12.fixRtm.rtm.modelpack.modelset.dummies
 
 import com.anatawa12.fixRtm.DummyModelPackManager
+import com.anatawa12.fixRtm.FixRtm
 import com.anatawa12.fixRtm.drawCenterString
+import com.anatawa12.fixRtm.utils.BufferedImageFontRenderer
 import jp.ngt.ngtlib.io.FileType
 import jp.ngt.ngtlib.renderer.model.GroupObject
 import jp.ngt.ngtlib.renderer.model.IModelNGT
 import jp.ngt.ngtlib.renderer.model.Material
 import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.Tessellator
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.ResourceLocation
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.Vec3d
 import org.lwjgl.opengl.GL11
+import java.awt.Color
 import java.awt.image.BufferedImage
+import java.nio.Buffer
 import javax.imageio.ImageIO
+import kotlin.math.max
 
 class DummyModelObject(val aabb: AxisAlignedBB,
                        val name: String,
@@ -21,6 +28,28 @@ class DummyModelObject(val aabb: AxisAlignedBB,
                        val rotate: Vec3d = Vec3d.ZERO,
                        val rotate1: Double = 0.0,
                        val nameOnly: Boolean = false) : IModelNGT {
+    private val nameTexture = ResourceLocation("fix-rtm", "textures/generated/modelname_$name.png")
+
+    init {
+        if (drawFaces.isNotEmpty()) {
+            GeneratedResourcePack.addImageGenerator(nameTexture.path) {
+                val renderer = BufferedImageFontRenderer
+                val width = renderer.getStringWidth(name)
+
+                val img = BufferedImage(
+                        width,
+                        16,
+                        BufferedImage.TYPE_INT_ARGB)
+
+                val graphics = img.createGraphics()
+
+                renderer.drawString(graphics, name, 0, 0)
+
+                img
+            }
+        }
+    }
+
     override fun getMaterials() = Companion.materials
 
     val aabbGlListId by lazy { getGlListId(aabb) }
@@ -32,8 +61,6 @@ class DummyModelObject(val aabb: AxisAlignedBB,
         }
         GL11.glRotated(rotate1, rotate.x, rotate.y, rotate.z)
 
-        val renderer = Minecraft.getMinecraft().fontRenderer
-
         aabb.apply {
             Minecraft.getMinecraft().renderEngine.bindTexture(resourceLocation)
 
@@ -41,12 +68,14 @@ class DummyModelObject(val aabb: AxisAlignedBB,
                 GL11.glCallList(aabbGlListId)
             }
 
+            Minecraft.getMinecraft().renderEngine.bindTexture(nameTexture)
+
             if (EnumFacing.DOWN in drawFaces) {
                 GL11.glPushMatrix()
                 GL11.glTranslated(center.x, minY - 0.01, center.z)
                 GL11.glRotated(-90.0, 1.0, 0.0, 0.0)
                 GL11.glScaled(0.01, 0.01, 0.01)
-                renderer.drawCenterString(name, 0, 0, 0xFFFFFF)
+                drawName()
                 GL11.glPopMatrix()
             }
             if (EnumFacing.UP in drawFaces) {
@@ -54,7 +83,7 @@ class DummyModelObject(val aabb: AxisAlignedBB,
                 GL11.glTranslated(center.x, maxY + 0.01, center.z)
                 GL11.glRotated(90.0, 1.0, 0.0, 0.0)
                 GL11.glScaled(0.01, 0.01, 0.01)
-                renderer.drawCenterString(name, 0, 0, 0xFFFFFF)
+                drawName()
                 GL11.glPopMatrix()
             }
             if (EnumFacing.SOUTH in drawFaces) {
@@ -63,7 +92,7 @@ class DummyModelObject(val aabb: AxisAlignedBB,
                 GL11.glRotated(180.0, 0.0, 1.0, 0.0)
                 GL11.glRotated(180.0, 0.0, 0.0, 1.0)
                 GL11.glScaled(0.01, 0.01, 0.01)
-                renderer.drawCenterString(name, 0, 0, 0xFFFFFF)
+                drawName()
                 GL11.glPopMatrix()
             }
             if (EnumFacing.NORTH in drawFaces) {
@@ -72,7 +101,7 @@ class DummyModelObject(val aabb: AxisAlignedBB,
                 GL11.glRotated(0.0, 0.0, 1.0, 0.0)
                 GL11.glRotated(180.0, 0.0, 0.0, 1.0)
                 GL11.glScaled(0.01, 0.01, 0.01)
-                renderer.drawCenterString(name, 0, 0, 0xFFFFFF)
+                drawName()
                 GL11.glPopMatrix()
             }
             if (EnumFacing.EAST in drawFaces) {
@@ -81,7 +110,7 @@ class DummyModelObject(val aabb: AxisAlignedBB,
                 GL11.glRotated(270.0, 0.0, 1.0, 0.0)
                 GL11.glRotated(180.0, 0.0, 0.0, 1.0)
                 GL11.glScaled(0.01, 0.01, 0.01)
-                renderer.drawCenterString(name, 0, 0, 0xFFFFFF)
+                drawName()
                 GL11.glPopMatrix()
             }
             if (EnumFacing.WEST in drawFaces) {
@@ -90,13 +119,29 @@ class DummyModelObject(val aabb: AxisAlignedBB,
                 GL11.glRotated(90.0, 0.0, 1.0, 0.0)
                 GL11.glRotated(180.0, 0.0, 0.0, 1.0)
                 GL11.glScaled(0.01, 0.01, 0.01)
-                renderer.drawCenterString(name, 0, 0, 0xFFFFFF)
+                drawName()
                 GL11.glPopMatrix()
             }
         }
 
         GL11.glPopMatrix()
         return
+    }
+
+    private fun drawName() {
+        val width = BufferedImageFontRenderer.getStringWidth(name)
+
+        GL11.glColor4d(1.0, 1.0, 1.0, 1.0)
+
+        GL11.glBegin(GL11.GL_QUADS)
+
+        GL11.glTexCoord2d(1.0, 1.0); GL11.glVertex3d(+width / 2.0, +8.0, 0.0)
+        GL11.glTexCoord2d(1.0, 0.0); GL11.glVertex3d(+width / 2.0, -8.0, 0.0)
+        GL11.glTexCoord2d(0.0, 0.0); GL11.glVertex3d(-width / 2.0, -8.0, 0.0)
+        GL11.glTexCoord2d(0.0, 1.0); GL11.glVertex3d(-width / 2.0, +8.0, 0.0)
+
+        GL11.glEnd()
+
     }
 
     override fun renderPart(smoothing: Boolean, partName: String) {

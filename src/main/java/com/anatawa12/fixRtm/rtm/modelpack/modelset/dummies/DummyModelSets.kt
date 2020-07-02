@@ -27,6 +27,7 @@ import kotlin.reflect.KProperty
 
 fun ModelSetBase<*>.constructOnClientDummy(model: IModelNGT) {
     val name = this.config.name
+    config.doCulling = true
     modelObj = ModelObject(model,
             arrayOf(
                     TextureSet(DummyModelObject.material, 0, false, false)
