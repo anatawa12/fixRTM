@@ -4,6 +4,7 @@ fixes some bugs of RTM and make RTM more useful!
 
 - [English](README.en.md)
 - [日本語](README.md)
+- [Русский](README.ru.md)
 
 ## For RTM 1.7.10 Users
 
